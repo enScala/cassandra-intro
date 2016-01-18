@@ -32,3 +32,11 @@ Cluster is a peer to peer (no master, no slaves) set of nodes.
   * **Cluster** – the full set of nodes which map to a single complete token ring
   
 ![alt text](/img/cassandra-cluster.jpg "Cassandra cluster")
+
+### Coordinator
+Coordinator is the node chosen by the client to receive a particular read or write request to its cluster.
+  
+  * The coordinator manages the Replication Factor
+  * The coordinator applies the Consistency Level
+
+![alt text](/img/cassandra-coordinator.jpg "Cassandra coordinator")
