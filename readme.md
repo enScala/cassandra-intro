@@ -77,12 +77,14 @@ What happens:
 **Replication factor** - how many replicas(copy of the data) to make of each partition.  
 Replication factor is configured when a keyspace is created.
   * **SimpleStrategy** - one factor for entire cluster
+    
     ```SQL
     CREATE KEYSPACE simple-demo
     WITH REPLICATION =
         {'class':'SimpleStrategy', 'replication_factor':2}
     ```
   * **NetworkTopologyStrategy**  - separate factor for each data center in cluster
+    
     ```SQL
     CREATE KEYSPACE simple-demo
     WITH REPLICATION =
@@ -101,6 +103,7 @@ In Cassandra you can set up *Consistency Level (CL)* for every request.
 if (nodes_written + nodes_read) > RF { immediate consistency }
 ```
 Some of the available *CL*
+
 | Name | Description |
 | --- | --- |
 | ANY (writes only) | Write to any node. |
