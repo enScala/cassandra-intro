@@ -171,7 +171,8 @@ Connect to node1 with cqlsh
 ```
 ccm node1 cqlsh
 ```
-Now node1 is coordinator.  
+Now node1 is coordinator.
+
 Create a keyspace with RF 2
 ```
 cqlsh> CREATE KEYSPACE demo WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor':2};
@@ -271,6 +272,7 @@ Consistency level set to ALL.
 cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
 ```
 We get error with message `"Cannot achieve consistency level ALL" info={'required_replicas': 2, 'alive_replicas': 1, 'consistency': 5}`. To perform this request with `CL = ALL` all the replicas(2) have to be alive.
+
 Let's change the CL back to ONE
 ```
 cqlsh:demo> CONSISTENCY one
@@ -286,6 +288,7 @@ ccm node4 stop
 cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
 ```
 We get error with message `"Cannot achieve consistency level ONE" info={'required_replicas': 1, 'alive_replicas': 0, 'consistency': 1}`. To perform this request with `CL = ONE` at least one replica has to be alive.
+
 Start *node4*
 ```
 ccm node4 start
