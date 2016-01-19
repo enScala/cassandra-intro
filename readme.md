@@ -6,8 +6,8 @@ Cassandra is massively linearly scalable NoSQL database.
   - Highly performant, with near-linear horizontal scaling in proper use cases
 
 ### Cassandra Query Language(CQL)
-Cassandra models data using [CQL](https://docs.datastax.com/en/cql/3.0/cql/cql_reference/cqlCommandsTOC.html)
-CQL provides a familiar, row-column, SQL-like approach
+Cassandra models data using [CQL](https://docs.datastax.com/en/cql/3.0/cql/cql_reference/cqlCommandsTOC.html).  
+CQL provides a familiar, row-column, SQL-like approach.
   * CREATE, ALTER, DROP
   * SELECT, INSERT, UPDATE, DELETE
 
@@ -133,4 +133,192 @@ In Cassandra clock synchronization across nodes is critical because
     Creates and manages multi-node clusters on a local machine.  
     It's useful for configuring development and test clusters
 
-[Here](https://docs.datastax.com/en/cassandra/2.1/cassandra/tools/toolsTOC.html) are all the available Cassandra tools
+[Here](https://docs.datastax.com/en/cassandra/2.1/cassandra/tools/toolsTOC.html) are all the available Cassandra tools.
+
+## Demo
+
+**Requirements**
+  * Installed Cassandra. [How to install](https://wiki.apache.org/cassandra/GettingStarted).
+  * Installed ccm. [How to install](https://github.com/pcmanus/ccm/blob/master/README.md).
+
+You can download prepared VM with Cassandra and CCM [here](https://academy.datastax.com/courses/ds201-cassandra-core-concepts). You need to be logged in.
+
+Create a cluster with cassandra version `2.1.2`  
+```
+ccm create demo -v 2.1.2
+```  
+Populate the cluster with 4 nodes  
+```
+ccm populate -n 4
+```  
+Start all the nodes  
+```
+ccm start
+```  
+See cluster status  
+```
+ccm status
+```  
+```
+Cluster: 'demo'
+---------------
+node1: UP
+node3: UP
+node2: UP
+node4: UP
+```
+Connect to node1 with cqlsh
+```
+ccm node1 cqlsh
+```
+Now node1 is coordinator.  
+Create a keyspace with RF 2
+```
+cqlsh> CREATE KEYSPACE demo WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor':2};
+```
+Use `demo` keyspace
+```
+cqlsh> use demo;
+```
+Crete `employees` table in `demo` keyspece
+```SQL
+cqlsh:demo> CREATE TABLE employees (
+                status text,
+                job text,
+                id int,
+                name text,
+                hired timestamp,
+                PRIMARY KEY ((status, job), id));
+```
+Here *PRIMARY KEY* contains `status`, `job` and `id` columns.  
+*PARTITION KEY* is `(status, job)`.  
+*CLUSTERING KEY* is `id`.  
+[Here](http://stackoverflow.com/questions/24949676/difference-between-partition-key-composite-key-and-clustering-key-in-cassandra#answer-24953331) is described difference between *PRIMARY KEY*, *PARTITION KEY* and *CLUSTERING KEY*.
+
+Insert a record
+```
+cqlsh:demo> INSERT INTO employees(status, job, id, name, hired) 
+                VALUES('active', 'developer', 123, 'John', '2012-10-30');
+```
+```
+cqlsh:demo> SELECT * FROM employees;
+```
+```
+ status | job       | id  | hired                    | name
+--------+-----------+-----+--------------------------+------
+ active | developer | 123 | 2012-10-30 00:00:00-0700 | John
+```
+Let's find on which nodes partition `active:developer` is located
+```
+ccm node1 nodetool ring
+```
+```
+Datacenter: datacenter1
+==========
+Address    Rack        Status State   Load            Owns                Token                                       
+                                                                          4611686018427387904                         
+127.0.0.1  rack1       Up     Normal  71 KB           ?                   -9223372036854775808                        
+127.0.0.2  rack1       Up     Normal  71.03 KB        ?                   -4611686018427387904                        
+127.0.0.3  rack1       Up     Normal  71 KB           ?                   0                                           
+127.0.0.4  rack1       Up     Normal  71 KB           ?                   4611686018427387904    
+```
+| node | from | to |
+| --- | --- | --- |
+| node1 | 4611686018427387904 | -9223372036854775808 |
+| node2 | -9223372036854775808 | -4611686018427387904 |
+| node3 | -4611686018427387904 | 0 |
+| node4 | 0 | 4611686018427387904 |
+
+
+```
+cqlsh:demo> SELECT token(status, job), status, job, id, hired, name FROM employees;
+```
+```
+ token(status, job)   | status | job       | id  | hired                    | name
+----------------------+--------+-----------+-----+--------------------------+------
+ -1776950073870789224 | active | developer | 123 | 2012-10-30 00:00:00-0700 | John
+```
+So the partiotion `active:developer` has token `-1776950073870789224`.  
+First replica of the partition is located on *node3* and the second one on *node4*.
+
+Stop *node3* using ccm
+```
+ccm node3 stop
+```
+Let's check the CL
+```
+cqlsh:demo> CONSISTENCY
+```
+```
+Current consistency level is 1.
+```
+```
+cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
+```
+```
+ status | job       | id  | hired                    | name
+--------+-----------+-----+--------------------------+------
+ active | developer | 123 | 2012-10-30 00:00:00-0700 | John
+```
+Let's change the CL to ALL
+```
+cqlsh:demo> CONSISTENCY all
+```
+```
+Consistency level set to ALL.
+```
+```
+cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
+```
+We get error with message `"Cannot achieve consistency level ALL" info={'required_replicas': 2, 'alive_replicas': 1, 'consistency': 5}`. To perform this request with `CL = ALL` all the replicas(2) have to be alive.
+Let's change the CL back to ONE
+```
+cqlsh:demo> CONSISTENCY one
+```
+```
+Consistency level set to ONE.
+```
+Stop *node4*
+```
+ccm node4 stop
+```
+```
+cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
+```
+We get error with message `"Cannot achieve consistency level ONE" info={'required_replicas': 1, 'alive_replicas': 0, 'consistency': 1}`. To perform this request with `CL = ONE` at least one replica has to be alive.
+Start *node4*
+```
+ccm node4 start
+```
+Insert another record
+```
+cqlsh:demo> INSERT INTO employees(status, job, id, name, hired) 
+                VALUES('active', 'developer', 1234, 'Dan', '2013-11-15');
+```
+If a node is down coordinator stores all mutations locally in `system.hints`
+```
+cqlsh:demo> SELECT * FROM system.hints;
+```
+When node is up all the mutations are sent to it.
+```
+ccm node3 start
+ccm node4 stop
+```
+```
+cqlsh:demo> SELECT * FROM system.hints;
+```
+```
+cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
+```
+```
+ status | job       | id   | hired                    | name
+--------+-----------+------+--------------------------+------
+ active | developer |  123 | 2012-10-30 00:00:00-0700 | John
+ active | developer | 1234 | 2013-11-15 00:00:00-0800 |  Dan
+```
+
+### Check out Datastax cources
+  1. [Cassandra Core Concepts](https://academy.datastax.com/courses/ds201-cassandra-core-concepts)
+  2. [Data Modeling](https://academy.datastax.com/courses/ds220-data-modeling)
+
+\* You need to be logged in to see the cources (it's free).
