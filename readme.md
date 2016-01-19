@@ -6,7 +6,7 @@ Cassandra is massively linearly scalable NoSQL database.
   - Highly performant, with near-linear horizontal scaling in proper use cases
 
 ### Cassandra Query Language(CQL)
-Cassandra models data using CQL.
+Cassandra models data using [CQL](https://docs.datastax.com/en/cql/3.0/cql/cql_reference/cqlCommandsTOC.html)
 CQL provides a familiar, row-column, SQL-like approach
   * CREATE, ALTER, DROP
   * SELECT, INSERT, UPDATE, DELETE
@@ -74,7 +74,7 @@ What happens:
 ![alt text](/img/cassandra-partitioner.jpg "Cassandra partitioner")
 
 ### Data replication
-**Replication factor** - how many replicas(copy of the data) to make of each partition.  
+**Replication factor** - how many replicas(copies of the data) to make of each partition.  
 Replication factor is configured when a keyspace is created.
   * **SimpleStrategy** - one factor for entire cluster
     
@@ -90,6 +90,7 @@ Replication factor is configured when a keyspace is created.
     WITH REPLICATION =
         {'class':'NetworkTopologyStrategy', 'dc-east':2, 'dc-west':3}
     ```
+
 ### Consistency
 
   * **Consistency Level** - sets how many of the nodes to be sent a given request must *acknowledge* that request, for a response to be returned to the client
@@ -114,3 +115,22 @@ Some of the available *CL*
 In Cassandra clock synchronization across nodes is critical because
   * Every write to any column includes column name, column value, and timestamp since epoch (1/1/70)
   * The most recently written data is returned to the client
+
+### Tools
+
+  1. **Nodetool** - a command-line cluster management utility
+
+    [Nodetool](https://docs.datastax.com/en/cassandra/2.1/cassandra/tools/toolsNodetool_r.html) supports over 60 commands, including
+
+    * status - display cluster state, load, host ID, and token
+    * info - display node memory use, disk load, uptime, and similar data
+    * ring - display node status and cluster ring state
+  
+  2. [**cqlsh**](https://docs.datastax.com/en/cql/3.0/cql/cql_reference/cqlshCommandsTOC.html) - an interactive, command-line CQL utility
+  
+  3. Cassandra Cluster Manager ([CCM](https://github.com/pcmanus/ccm/blob/master/README.md))
+  
+    Creates and manages multi-node clusters on a local machine.  
+    It's useful for configuring development and test clusters
+
+[Here](https://docs.datastax.com/en/cassandra/2.1/cassandra/tools/toolsTOC.html) are all the available Cassandra tools
