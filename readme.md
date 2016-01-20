@@ -138,7 +138,7 @@ In Cassandra clock synchronization across nodes is critical because
 ## Demo
 
 **Requirements**
-  * Installed Cassandra. [How to install](https://wiki.apache.org/cassandra/GettingStarted).
+  * Installed Cassandra. [How to install and run](https://wiki.apache.org/cassandra/GettingStarted).
   * Installed ccm. [How to install](https://github.com/pcmanus/ccm/blob/master/README.md).
 
 You can download prepared VM with Cassandra and CCM [here](https://academy.datastax.com/courses/ds201-cassandra-core-concepts). You need to be logged in.
