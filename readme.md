@@ -320,8 +320,8 @@ cqlsh:demo> SELECT * FROM employees WHERE status='active' AND job='developer';
  active | developer | 1234 | 2013-11-15 00:00:00-0800 |  Dan
 ```
 
-### Check out Datastax cources
+### Check out Datastax courses
   1. [Cassandra Core Concepts](https://academy.datastax.com/courses/ds201-cassandra-core-concepts)
   2. [Data Modeling](https://academy.datastax.com/courses/ds220-data-modeling)
 
-\* You need to be logged in to see the cources (it's free).
+\* You need to be logged in to see the courses (it's free).
